@@ -1,0 +1,45 @@
+import graphviz
+def add_node(graph,name,plugin,params):
+    joined_params = r" ".join([f"""<TR><TD>{k}:{v}</TD></TR>""" for k,v in sorted(params.items())])
+    label = f'''<<TABLE>
+ <TR><TD>{plugin}</TD></TR>
+{joined_params}
+</TABLE>>'''
+    graph.node(name,label)
+    
+def view_json(conf: list):
+    dot = graphviz.Digraph(comment='The Round Table')
+    parents = {}
+    table_mapping = {}
+    nodes = []
+    with dot.subgraph(name='cluster_1', graph_attr={"label":"create_tables","color":"red"}) as subgraph:
+        with dot.subgraph(name='cluster_2', graph_attr={"label":"global_tables","color":"blue"},node_attr={"style":"filled"}) as subgraph2:
+
+            n = 0
+            for c in conf:
+                output_tables = [c[i] for i in list(c.keys()) if "output" in i]
+                for output_table in output_tables:
+                    if output_table in table_mapping:
+                        raise RuntimeError(f"{output_table} exists already")
+                    table_mapping.update({output_table:str(n)})
+                input_tables = c.get("inputs",[])
+                input_tables += [c[i] for i in list(c.keys()) if "input" in i and i != 'inputs']
+                print(input_tables)
+                for input_table in input_tables:
+                    existing_parents = parents.pop(str(n),[])
+                    parents.update({str(n): existing_parents+[input_table]})
+                add_node(subgraph,str(n),c.pop("plugin"),c)
+                n += 1
+            print(table_mapping)
+            for k in parents.keys():
+                for p in parents[k]:
+                    print(p)
+                    if not p in table_mapping:
+                        add_node(subgraph2,str(n),p,{})
+                        table_mapping.update({p:str(n)})
+                        n += 1
+            for k in parents.keys():
+                for p in parents[k]:
+                    subgraph.edge(table_mapping[p],k)
+
+    return dot
