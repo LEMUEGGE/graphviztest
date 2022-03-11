@@ -43,3 +43,7 @@ def view_json(conf: list):
                     subgraph.edge(table_mapping[p],k)
 
     return dot
+
+view_json([{"plugin":"GroupMax","group":"date,account,superlongstring","input":"table1","output":"table3"},
+           {"plugin":"GroupSum","group":"abchsadj","input":"table1","output":"table6"},
+          {"plugin":"LeftJoin","output":"table1","inputs":["target","global_table"],"a":"b","c":"d","f":"g"},{"plugin":"GlobalTable","input":"sourcetable","output":"global_table"}]).render("output")
